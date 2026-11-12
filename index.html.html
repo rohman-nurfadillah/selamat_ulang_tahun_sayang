@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Galaksi Cinta Untukmu</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        overflow: hidden;
+        background: #000;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: #fff;
+        user-select: none;
+      }
+
+      #canvas-container {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+      }
+
+      /* Layar Pembuka */
+      #intro-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: radial-gradient(
+          circle at center,
+          rgba(25, 5, 20, 0.75) 0%,
+          rgba(0, 0, 0, 0.96) 100%
+        );
+        transition:
+          opacity 1s ease,
+          visibility 1s ease;
+        padding: 20px;
+      }
+
+      #intro-screen.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      #intro-screen h1 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(2.1rem, 5vw, 3.6rem);
+        font-weight: 700;
+        line-height: 1.15;
+        text-shadow: 0 0 20px rgba(255, 105, 180, 0.65);
+        margin-bottom: 24px;
+      }
+
+      .intro-character {
+        width: 150px;
+        height: 150px;
+        margin-bottom: 18px;
+        filter: drop-shadow(0 0 18px rgba(255, 105, 180, 0.55));
+        animation: floatChar 3s ease-in-out infinite;
+      }
+
+      @keyframes floatChar {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+
+      .intro-subtitle {
+        font-size: 0.78rem;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #f3d6e4;
+        margin-bottom: 22px;
+      }
+
+      #enter-btn {
+        padding: 12px 28px;
+        border-radius: 999px;
+        border: 1.5px solid #ff4da6;
+        background: rgba(255, 45, 135, 0.16);
+        color: #fff;
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 2px;
+        cursor: pointer;
+        box-shadow:
+          0 0 20px rgba(255, 77, 166, 0.45),
+          inset 0 0 12px rgba(255, 77, 166, 0.25);
+        transition:
+          transform 0.25s ease,
+          box-shadow 0.25s ease,
+          background 0.25s ease;
+      }
+
+      #enter-btn:hover {
+        transform: scale(1.05);
+        background: rgba(255, 45, 135, 0.32);
+        box-shadow: 0 0 30px rgba(255, 77, 166, 0.8);
+      }
+
+      /* Modal Kartu Pesan */
+      #card-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(4px);
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.35s ease,
+          visibility 0.35s ease;
+        padding: 20px;
+      }
+
+      #card-modal.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal-box {
+        width: 100%;
+        max-width: 340px;
+        background: linear-gradient(
+          180deg,
+          rgba(38, 12, 26, 0.92) 0%,
+          rgba(16, 6, 12, 0.96) 100%
+        );
+        border: 1.5px solid rgba(255, 92, 168, 0.65);
+        border-radius: 20px;
+        padding: 22px 20px;
+        text-align: center;
+        box-shadow: 0 0 35px rgba(255, 64, 150, 0.4);
+        transform: scale(0.92);
+        transition: transform 0.35s ease;
+      }
+
+      #card-modal.active .modal-box {
+        transform: scale(1);
+      }
+
+      .modal-art {
+        width: 170px;
+        height: 170px;
+        margin: 0 auto 16px;
+        border-radius: 14px;
+        background: radial-gradient(
+          circle,
+          rgba(255, 105, 180, 0.25),
+          rgba(0, 0, 0, 0.65)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4.5rem;
+        border: 1px solid rgba(255, 105, 180, 0.3);
+      }
+
+      .modal-box h2 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.45rem;
+        margin-bottom: 10px;
+        color: #fff;
+      }
+
+      .modal-box p {
+        font-size: 0.86rem;
+        line-height: 1.55;
+        color: #e9d5df;
+        margin-bottom: 18px;
+      }
+
+      #close-modal-btn {
+        padding: 8px 20px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 105, 180, 0.65);
+        background: rgba(255, 77, 166, 0.18);
+        color: #fff;
+        font-size: 0.75rem;
+        letter-spacing: 1.5px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      #close-modal-btn:hover {
+        background: rgba(255, 77, 166, 0.4);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="canvas-container"></div>
+
+    <!-- Layar Awal -->
+    <div id="intro-screen">
+      <h1>Galaksi<br />Cinta Untukmu</h1>
+      <svg
+        class="intro-character"
+        viewBox="0 0 200 200"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <!-- Hati melayang -->
+        <path
+          d="M52 55 C52 47, 63 47, 63 55 C63 47, 74 47, 74 55 C74 64, 63 72, 63 72 C63 72, 52 64, 52 55 Z"
+          fill="#ff5ca8"
+        />
+        <path
+          d="M132 45 C132 38, 141 38, 141 45 C141 38, 150 38, 150 45 C150 53, 141 60, 141 60 C141 60, 132 53, 132 45 Z"
+          fill="#ff85c0"
+        />
+        <!-- Telinga kelinci -->
+        <ellipse
+          cx="86"
+          cy="54"
+          rx="11"
+          ry="30"
+          transform="rotate(-12 86 54)"
+          fill="#fff"
+        />
+        <ellipse
+          cx="86"
+          cy="54"
+          rx="5"
+          ry="20"
+          transform="rotate(-12 86 54)"
+          fill="#ffb6d9"
+        />
+        <ellipse
+          cx="114"
+          cy="54"
+          rx="11"
+          ry="30"
+          transform="rotate(12 114 54)"
+          fill="#fff"
+        />
+        <ellipse
+          cx="114"
+          cy="54"
+          rx="5"
+          ry="20"
+          transform="rotate(12 114 54)"
+          fill="#ffb6d9"
+        />
+        <!-- Kepala & Badan -->
+        <circle cx="100" cy="96" r="34" fill="#fff" />
+        <ellipse cx="100" cy="144" rx="28" ry="26" fill="#fff" />
+        <!-- Mata & Pipi -->
+        <circle cx="88" cy="94" r="3.5" fill="#222" />
+        <circle cx="112" cy="94" r="3.5" fill="#222" />
+        <ellipse cx="81" cy="102" rx="5" ry="3" fill="#ff9ecb" />
+        <ellipse cx="119" cy="102" rx="5" ry="3" fill="#ff9ecb" />
+        <path
+          d="M96 101 Q100 106 104 101"
+          stroke="#222"
+          stroke-width="2.5"
+          fill="none"
+          stroke-linecap="round"
+        />
+        <!-- Hati yang dipegang -->
+        <path
+          d="M84 132 C84 121, 100 121, 100 132 C100 121, 116 121, 116 132 C116 146, 100 156, 100 156 C100 156, 84 146, 84 132 Z"
+          fill="#ff2e88"
+        />
+      </svg>
+      <div class="intro-subtitle">SELAMAT ULANG TAHUN, SAYANGKU</div>
+      <button id="enter-btn">MASUK KE SEMESTA KITA</button>
+    </div>
+
+    <!-- Modal Kartu Saat Sprite Diklik -->
+    <div id="card-modal">
+      <div class="modal-box">
+        <div class="modal-art" id="modal-emoji">💖</div>
+        <h2 id="modal-title">Cinta dalam Hidupku</h2>
+        <p id="modal-text">
+          Semakin lama kita bersama, semakin besar rasa cintaku padamu.
+        </p>
+        <button id="close-modal-btn">KEMBALI ♥</button>
+      </div>
+    </div>
+
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+      const container = document.getElementById("canvas-container");
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x050008, 0.015);
+
+      const camera = new THREE.PerspectiveCamera(
+        60,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000,
+      );
+      camera.position.set(0, 14, 42);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxDistance = 55;
+      controls.minDistance = 8;
+
+      // Pencahayaan
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(ambientLight);
+      const pointLight = new THREE.PointLight(0xff4da6, 2.5, 60);
+      pointLight.position.set(0, 8, 0);
+      scene.add(pointLight);
+
+      // 1. Latar Bintang Ruang Angkasa
+      const starGeo = new THREE.BufferGeometry();
+      const starCount = 2500;
+      const starPos = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount * 3; i++) {
+        starPos[i] = (Math.random() - 0.5) * 180;
+      }
+      starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
+      const starMat = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.22,
+        transparent: true,
+        opacity: 0.85,
+      });
+      const starField = new THREE.Points(starGeo, starMat);
+      scene.add(starField);
+
+      // 2. Inti Lubang Hitam & Cincin Akresi
+      const blackHole = new THREE.Mesh(
+        new THREE.SphereGeometry(2.1, 32, 32),
+        new THREE.MeshBasicMaterial({ color: 0x000000 }),
+      );
+      scene.add(blackHole);
+
+      const coreGlow = new THREE.Mesh(
+        new THREE.RingGeometry(2.15, 3.4, 64),
+        new THREE.MeshBasicMaterial({
+          color: 0xff66b3,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.85,
+        }),
+      );
+      coreGlow.rotation.x = -Math.PI / 2;
+      scene.add(coreGlow);
+
+      // 3. Galaksi Spiral Partikel
+      const galaxyGeo = new THREE.BufferGeometry();
+      const galaxyCount = 9000;
+      const galaxyPositions = new Float32Array(galaxyCount * 3);
+      const galaxyColors = new Float32Array(galaxyCount * 3);
+
+      const colorInside = new THREE.Color(0xff99cc);
+      const colorOutside = new THREE.Color(0xb30059);
+      const branches = 5;
+
+      for (let i = 0; i < galaxyCount; i++) {
+        const i3 = i * 3;
+        const radius = 2.4 + Math.random() * 19;
+        const spinAngle = radius * 0.42;
+        const branchAngle = ((i % branches) / branches) * Math.PI * 2;
+
+        const randomX =
+          Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 1.4;
+        const randomY =
+          Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 0.5;
+        const randomZ =
+          Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 1.4;
+
+        galaxyPositions[i3] =
+          Math.cos(branchAngle + spinAngle) * radius + randomX;
+        galaxyPositions[i3 + 1] = randomY;
+        galaxyPositions[i3 + 2] =
+          Math.sin(branchAngle + spinAngle) * radius + randomZ;
+
+        const mixedColor = colorInside.clone().lerp(colorOutside, radius / 21);
+        galaxyColors[i3] = mixedColor.r;
+        galaxyColors[i3 + 1] = mixedColor.g;
+        galaxyColors[i3 + 2] = mixedColor.b;
+      }
+
+      galaxyGeo.setAttribute(
+        "position",
+        new THREE.BufferAttribute(galaxyPositions, 3),
+      );
+      galaxyGeo.setAttribute(
+        "color",
+        new THREE.BufferAttribute(galaxyColors, 3),
+      );
+
+      const galaxyMat = new THREE.PointsMaterial({
+        size: 0.14,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const galaxyPoints = new THREE.Points(galaxyGeo, galaxyMat);
+      scene.add(galaxyPoints);
+
+      // 4. Hati Partikel 3D Besar di Atas Pusat Galaksi
+      const bigHeartGeo = new THREE.BufferGeometry();
+      const bigHeartPoints = [];
+      for (let i = 0; i < 2600; i++) {
+        const t = Math.random() * Math.PI * 2;
+        const r = 0.85 + Math.random() * 0.22;
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y =
+          13 * Math.cos(t) -
+          5 * Math.cos(2 * t) -
+          2 * Math.cos(3 * t) -
+          Math.cos(4 * t);
+        const z = (Math.random() - 0.5) * 4.5 * Math.sin(t);
+        bigHeartPoints.push(x * 0.24 * r, y * 0.24 * r + 7.2, z * 0.35);
+      }
+      bigHeartGeo.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(bigHeartPoints, 3),
+      );
+      const bigHeartMat = new THREE.PointsMaterial({
+        color: 0xff4da6,
+        size: 0.16,
+        transparent: true,
+        opacity: 0.95,
+        blending: THREE.AdditiveBlending,
+      });
+      const bigHeart = new THREE.Points(bigHeartGeo, bigHeartMat);
+      scene.add(bigHeart);
+
+      // 5. Cincin Teks Melingkar di Orbit Galaksi
+      function createTextRing(text, radius, speed) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 2048;
+        canvas.height = 128;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = "bold 42px Arial, sans-serif";
+        ctx.fillStyle = "#ffe6f2";
+        ctx.shadowColor = "#ff3399";
+        ctx.shadowBlur = 12;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const repeated = (text + "   ∞   ").repeat(6);
+        ctx.fillText(repeated, canvas.width / 2, canvas.height / 2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+
+        const cylGeo = new THREE.CylinderGeometry(
+          radius,
+          radius,
+          1.35,
+          96,
+          1,
+          true,
+        );
+        const cylMat = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        });
+        const mesh = new THREE.Mesh(cylGeo, cylMat);
+        mesh.userData.speed = speed;
+        scene.add(mesh);
+        return mesh;
+      }
+
+      const textRings = [
+        createTextRing("CINTA ABADIKU", 7.2, 0.0035),
+        createTextRing("SELAMAT ULANG TAHUN", 10.5, -0.0028),
+        createTextRing("AKU MENCINTAIMU  •  KAMU ISTIMEWA", 13.8, 0.0022),
+        createTextRing(
+          "SELAMAT ULANG TAHUN  •  CINTA DALAM HIDUPKU",
+          17.2,
+          -0.0018,
+        ),
+      ];
+
+      // 6. Hati-Hati Kecil Melayang (Kode dari Video Tidak Diubah)
+      const heartShape = new THREE.Shape();
+      heartShape.moveTo(0, 0.25);
+      heartShape.bezierCurveTo(0, 0.25, -0.25, 0, -0.25, -0.15);
+      heartShape.bezierCurveTo(-0.25, -0.35, 0, -0.45, 0, -0.6);
+      heartShape.bezierCurveTo(0, -0.45, 0.25, -0.35, 0.25, -0.15);
+      heartShape.bezierCurveTo(0.25, 0, 0, 0.25, 0, 0.25);
+
+      const heartGeo = new THREE.ShapeGeometry(heartShape);
+      const heartMat = new THREE.MeshBasicMaterial({
+        color: 0xff2a7a,
+        side: THREE.DoubleSide,
+      });
+      const heartGroup = [];
+
+      for (let i = 0; i < 65; i++) {
+        const heartMesh = new THREE.Mesh(heartGeo, heartMat);
+        heartMesh.userData = {
+          radius: 4 + Math.random() * 14,
+          angle: Math.random() * Math.PI * 2,
+          ySpeed: 0.006 + Math.random() * 0.012,
+          yOffset: (Math.random() - 0.5) * 6,
+        };
+        heartMesh.position.x =
+          Math.cos(heartMesh.userData.angle) * heartMesh.userData.radius;
+        heartMesh.position.z =
+          Math.sin(heartMesh.userData.angle) * heartMesh.userData.radius;
+        heartMesh.position.y = heartMesh.userData.yOffset;
+        scene.add(heartMesh);
+        heartGroup.push(heartMesh);
+      }
+
+      // 7. Kartu Karakter Interaktif yang Mengorbit Galaksi
+      const cardData = [
+        {
+          emoji: "🕷️💖🐱",
+          title: "Cinta dalam Hidupku",
+          text: "Semakin lama kita bersama, semakin besar rasa cintaku padamu.",
+          radius: 9.5,
+          angle: 0.4,
+        },
+        {
+          emoji: "🐶💌✨",
+          title: "Untukmu",
+          text: "Untukmu, yang membuat jantungku berdetak dengan cara yang istimewa. Di setiap kenangan dan di setiap detak, selalu ada kamu.",
+          radius: 13.2,
+          angle: 2.5,
+        },
+        {
+          emoji: "💑🌙💫",
+          title: "Selamanya",
+          text: "Tak peduli berapa banyak kehidupan yang harus kujalani, di setiap kehidupan itu aku akan tetap memilihmu. Untuk selamanya dan satu hari lagi.",
+          radius: 16.0,
+          angle: 4.5,
+        },
+      ];
+
+      const interactiveSprites = [];
+
+      cardData.forEach((item) => {
+        const c = document.createElement("canvas");
+        c.width = 256;
+        c.height = 256;
+        const ctx = c.getContext("2d");
+
+        ctx.fillStyle = "rgba(35, 10, 25, 0.85)";
+        ctx.beginPath();
+        ctx.roundRect(18, 18, 220, 220, 36);
+        ctx.fill();
+
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = "#ff66b3";
+        ctx.stroke();
+
+        ctx.font = "86px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(item.emoji, 128, 134);
+
+        const tex = new THREE.CanvasTexture(c);
+        const spriteMat = new THREE.SpriteMaterial({
+          map: tex,
+          transparent: true,
+        });
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.scale.set(2.3, 2.3, 1);
+        sprite.userData = item;
+        scene.add(sprite);
+        interactiveSprites.push(sprite);
+      });
+
+      // Interaksi Klik pada Kartu Karakter
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+      const modal = document.getElementById("card-modal");
+      const modalEmoji = document.getElementById("modal-emoji");
+      const modalTitle = document.getElementById("modal-title");
+      const modalText = document.getElementById("modal-text");
+
+      window.addEventListener("click", (e) => {
+        if (
+          !document.getElementById("intro-screen").classList.contains("hidden")
+        )
+          return;
+        if (modal.classList.contains("active")) return;
+
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+
+        const hits = raycaster.intersectObjects(interactiveSprites);
+        if (hits.length > 0) {
+          const data = hits[0].object.userData;
+          modalEmoji.textContent = data.emoji;
+          modalTitle.textContent = data.title;
+          modalText.textContent = data.text;
+          modal.classList.add("active");
+        }
+      });
+
+      document
+        .getElementById("close-modal-btn")
+        .addEventListener("click", (e) => {
+          e.stopPropagation();
+          modal.classList.remove("active");
+        });
+
+      // Animasi Transisi Masuk Galaksi
+      let entered = false;
+      let targetCamPos = new THREE.Vector3(0, 12, 24);
+
+      document.getElementById("enter-btn").addEventListener("click", () => {
+        document.getElementById("intro-screen").classList.add("hidden");
+        entered = true;
+      });
+
+      // Loop Animasi Utama
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const elapsed = clock.getElapsedTime();
+
+        if (entered && camera.position.distanceTo(targetCamPos) > 0.2) {
+          camera.position.lerp(targetCamPos, 0.035);
+        }
+
+        galaxyPoints.rotation.y = elapsed * 0.12;
+        starField.rotation.y = elapsed * 0.015;
+        bigHeart.rotation.y = Math.sin(elapsed * 0.8) * 0.35;
+        bigHeart.position.y = Math.sin(elapsed * 1.8) * 0.25;
+
+        textRings.forEach((ring) => {
+          ring.rotation.y += ring.userData.speed;
+        });
+
+        heartGroup.forEach((heart) => {
+          heart.position.y += heart.userData.ySpeed;
+          heart.rotation.z =
+            Math.PI + Math.sin(elapsed * 2 + heart.userData.angle) * 0.2;
+          if (heart.position.y > 7) {
+            heart.position.y = -4;
+          }
+        });
+
+        interactiveSprites.forEach((sprite) => {
+          const a = sprite.userData.angle + elapsed * 0.18;
+          sprite.position.x = Math.cos(a) * sprite.userData.radius;
+          sprite.position.z = Math.sin(a) * sprite.userData.radius;
+          sprite.position.y = 1.4 + Math.sin(elapsed * 2 + a) * 0.35;
+        });
+
+        controls.update();
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>
